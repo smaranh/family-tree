@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import useFamilyStore from '../familyStore';
+import useFamilyStore, { type FamilyData } from '../familyStore';
 
 // Minimal test data — isolated from the real family.json
-const testData = {
+const testData: FamilyData = {
   root_person: 'person-A',
   persons: [
     { id: 'person-A', name: 'Alice', dob: '1940-01-01', image: null },
@@ -81,8 +81,8 @@ describe('rootPersonId resolution', () => {
   it('falls back to first person when all dobs are missing', () => {
     useFamilyStore.getState().loadData({
       persons: [
-        { id: 'p1', name: 'No DOB 1', dob: null,      image: null },
-        { id: 'p2', name: 'No DOB 2', dob: undefined, image: null },
+        { id: 'p1', name: 'No DOB 1', dob: null, image: null },
+        { id: 'p2', name: 'No DOB 2', dob: null, image: null },
       ],
       relationships: [],
     });
