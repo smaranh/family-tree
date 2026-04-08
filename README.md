@@ -1,65 +1,16 @@
-# 🌳 Family Tree App
+# React + Vite
 
-A dynamic, interactive family tree visualizer built with React and React Flow. Explore relationships across generations, add new family members, and navigate your family history with ease.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
----
+Currently, two official plugins are available:
 
-## Features
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-### View Mode
-- Visualizes up to 3 generations downward from a root ancestor
-- Spouses appear side-by-side at each generation level
-- Click any person card to expand or collapse their branch
-- No hard depth limit — keep exploring as far as the data goes
-- Per-card auto-zoom control to focus on any subtree
+## React Compiler
 
-### Add / Edit Mode
-- Add new family members with name, date of birth, and a profile image URL
-- Edit existing person details and relationships
-- Define relationships — parents, spouse, and children
-- Smart auto-inference: shared parents automatically infer a spouse link; shared grandparents infer a sibling link
-- Inline "Add New Person" modal from within relationship dropdowns
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-### Search *(Phase 2)*
-- Autocomplete search to find any person in the tree
-- Selecting a result re-roots the tree to that person
-- A parent bubble above the root allows navigating one generation upward
+## Expanding the ESLint configuration
 
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Framework | React + Vite |
-| Tree Visualization | React Flow |
-| State Management | Zustand |
-| Routing | React Router v6 |
-| Styling | Material UI + Styled Components |
-
----
-
-## Data
-
-Family data is stored as a flat, graph-based JSON file with `persons` and `relationships` arrays. Changes are persisted to `localStorage`. No backend is required for Phase 1.
-
-See [`summary.md`](./summary.md) for the full data model specification and all design decisions.
-
----
-
-## Getting Started
-
-```bash
-npm install
-npm run dev
-```
-
----
-
-## Project Status
-
-| Phase | Feature | Status |
-|---|---|---|
-| 1A | View Mode — Tree Visualization | 🔲 Planned |
-| 1B | Add / Edit Mode | 🔲 Planned |
-| 2 | Search & Autocomplete | 🔲 Planned |
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
