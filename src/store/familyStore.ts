@@ -154,4 +154,15 @@ const useFamilyStore = create<FamilyState>((set, get) => ({
 // Load initial data on module init
 useFamilyStore.getState().loadData(initialData as FamilyData);
 
-export default useFamilyStore;
+// ---------------------------------------------------------------------------
+// Selectors
+// ---------------------------------------------------------------------------
+
+export const usePersons = () => useFamilyStore((s) => s.persons);
+export const useRelationships = () => useFamilyStore((s) => s.relationships);
+export const useRootPersonId = () => useFamilyStore((s) => s.rootPersonId);
+export const useExpandedNodes = () => useFamilyStore((s) => s.expandedNodes);
+export const useToggleExpand = () => useFamilyStore((s) => s.toggleExpand);
+export const useGetSpouse = () => useFamilyStore((s) => s.getSpouse);
+export const useGetChildren = () => useFamilyStore((s) => s.getChildren);
+export const useGetPersonById = () => useFamilyStore((s) => s.getPersonById);

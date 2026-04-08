@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo } from 'react';
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -10,8 +10,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import PersonCard from '../components/PersonCard';
-import useFamilyStore from '../store/familyStore';
+import { PersonCard } from '../components/PersonCard';
+import { useToggleExpand, usePersons, useRelationships, useRootPersonId, useExpandedNodes } from '../store/familyStore';
 import { buildTree } from '../utils/buildTree';
 
 // ---------------------------------------------------------------------------
@@ -25,17 +25,15 @@ const nodeTypes = { personCard: PersonCard };
 // ---------------------------------------------------------------------------
 
 function ViewModeInner() {
-  const persons = useFamilyStore((s) => s.persons);
-  const relationships = useFamilyStore((s) => s.relationships);
-  const rootPersonId = useFamilyStore((s) => s.rootPersonId);
-  const expandedNodes = useFamilyStore((s) => s.expandedNodes);
-  const toggleExpand = useFamilyStore((s) => s.toggleExpand);
+  const expandedNodes = useExpandedNodes();
+  const persons = usePersons();
+  const relationships = useRelationships();
+  const rootPersonId = useRootPersonId();
+  const toggleExpand = useToggleExpand();
 
   // Auto-expand 3 generations from root on initial load
   useEffect(() => {
     if (!rootPersonId) return;
-
-    // const { toggleExpand, relationships: rels } = useFamilyStore.getState();
 
     function expandGenerations(personId: string, depth: number) {
       if (depth === 0) return;
@@ -65,15 +63,6 @@ function ViewModeInner() {
   useEffect(() => { setNodes(builtNodes); }, [builtNodes, setNodes]);
   useEffect(() => { setEdges(builtEdges); }, [builtEdges, setEdges]);
 
-  const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: { id: string }) => {
-      toggleExpand(node.id);
-    },
-    [toggleExpand]
-  );
-
-  console.log(nodes)
-
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#faf6ef' }}>
       <ReactFlow
@@ -81,7 +70,6 @@ function ViewModeInner() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.3 }}
