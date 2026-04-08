@@ -1,7 +1,21 @@
-function App() {
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import ViewMode from './pages/ViewMode';
+
+function EditModePlaceholder() {
   return (
-    <h1>Hello Family</h1>
-  )
+    <div style={{ padding: 40, fontFamily: 'Georgia, serif', color: '#3d2b1a' }}>
+      <h2>Edit Mode — Phase 1B (coming soon)</h2>
+    </div>
+  );
 }
 
-export default App
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<ViewMode />} />
+        <Route path="/edit" element={<EditModePlaceholder />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
