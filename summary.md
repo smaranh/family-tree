@@ -8,11 +8,11 @@
 
 | Concern | Decision |
 |---|---|
-| Framework | React + Vite |
-| Graph Visualization | React Flow |
-| State Management | Zustand |
-| Routing | React Router v6 |
-| Styling | Material UI + Styled Components |
+| Framework | React 19.2 + Vite |
+| Graph Visualization | React Flow 11.11 |
+| State Management | Zustand 5.0 |
+| Routing | React Router 7.14 |
+| Styling | Emotion (CSS-in-JS) |
 | Data (Phase 1) | JSON file + localStorage persistence |
 
 ---
@@ -83,6 +83,66 @@ const INVERSE_RELATIONSHIP = { parent: 'child' };
 
 ---
 
+## Implementation Notes (Phase 1A)
+
+### File Structure
+
+```
+src/
+├── App.tsx                    # Router setup — / → ViewMode, /edit → placeholder
+├── pages/
+│   └── ViewMode.tsx           # React Flow container; auto-expands 3 generations on mount
+├── store/
+│   └── familyStore.ts         # Zustand store; exports granular selector hooks
+├── components/
+│   ├── PersonCard/            # Custom React Flow node — name, DOB, avatar, focus icon, warning dot
+│   ├── Avatar/                # Initials fallback or image
+│   └── FocusIcon/             # SVG crosshair — triggers fitView on subtree
+├── utils/
+│   └── buildTree.ts           # Recursive layout engine (depth-first, absolute positioning)
+└── data/
+    └── family.json            # Sample dataset (10 people, 3 generations)
+```
+
+### Layout Engine (`buildTree.ts`)
+
+- Card size: 180×100px; horizontal gap between siblings: 40px; spouse gap: 16px; vertical gap: 80px
+- `measureSubtreeWidth()` calculates total horizontal space for a person and all their descendants
+- `buildLevel()` places nodes recursively, generating absolute `(x, y)` coordinates for React Flow
+- Visited Set prevents infinite loops on malformed data
+- Couple unit (person + spouse) is centered as a block above their children
+- De-duplication: shared children of a couple appear once, not twice
+
+### State & Rendering Flow
+
+```
+Zustand (expandedNodes, rootPersonId changes)
+  → ViewMode useMemo → buildTree() → new nodes/edges arrays
+  → React Flow setNodes/setEdges → re-render
+```
+
+- React Flow has pan/zoom enabled (0.2–2.0×), drag/connect disabled
+- `fitView` is called on mount and when any card's focus icon is clicked
+- `PersonCard` is `React.memo`'d; `buildTree` is `useMemo`'d for performance
+
+### Edge Types
+
+| Edge | Style |
+|---|---|
+| Parent → child | Solid smoothstep curve |
+| Spouse ↔ spouse | Dashed straight line |
+
+### Missing-Data Indicator
+
+If a person is missing `name` or `dob`, an orange warning dot appears on their card.
+
+### Tests
+
+- `familyStore.test.ts` — root resolution, expand/collapse cascade, getters
+- `buildTree.test.ts` — spouse placement, generation spacing, sibling alignment, de-duplication (50+ cases)
+
+---
+
 ## Phase 1A — View Mode (Route: `/`)
 
 ### Initial Load
@@ -124,66 +184,121 @@ Root person is determined in priority order:
 
 ## Phase 1B — Add/Edit Mode (Route: `/edit`)
 
-### Page Layout
+### Current State
+
+A placeholder `EditMode` component is wired up at `/edit` in `App.tsx`. No form logic exists yet.
+
+### Implementation Approach
+
+#### New Files to Create
+
+```
+src/
+├── pages/
+│   └── EditMode.tsx               # Page shell — top bar + form area
+├── components/
+│   ├── PersonSearch/              # Autocomplete search widget (reusable in Phase 2)
+│   │   ├── component.tsx
+│   │   ├── styles.ts              # Emotion styled components for search input + suggestion list
+│   │   └── index.ts
+│   ├── PersonForm/                # The main add/edit form
+│   │   ├── component.tsx
+│   │   ├── styles.ts              # Emotion styled components for form layout + field wrappers
+│   │   └── index.ts
+│   └── AddPersonModal/            # Quick-add modal for relationship dropdowns
+│       ├── component.tsx
+│       ├── styles.ts              # Emotion styled components for modal overlay + content
+│       └── index.ts
+```
+
+#### Store Changes Required
+
+The Zustand store needs the following new actions (to be added to `familyStore.ts`):
+
+```ts
+addPerson(person: Omit<Person, 'id'>): string         // returns new UUID
+updatePerson(id: string, patch: Partial<Person>): void
+setRelationships(personId: string, rels: RelationshipInput[]): void
+  // Diffs current relationships for this person against the new set,
+  // adds missing ones, removes stale ones, then runs auto-inference.
+persist(): void
+  // Serializes persons + relationships to localStorage.
+  // Called after addPerson / updatePerson / setRelationships.
+```
+
+No changes needed to the existing read selectors or `toggleExpand`.
+
+#### Page Layout
 
 Two action buttons at the top of the page:
-- **Add Person** → renders a blank Person form
-- **Edit Person** → renders the **Autocomplete Search Widget** to find an existing person; on selection, the same Person form renders with the selected person's data pre-filled
+- **Add Person** → renders a blank Person form (default state on route load)
+- **Edit Person** → renders the `PersonSearch` widget; selecting a person pre-fills the form
 
-### Autocomplete Search Widget
+#### PersonSearch Component
 
-- **Reusable component** — shared between Edit Mode (Phase 1) and the Search feature (Phase 2)
-- Performs prefix/fuzzy match against persons in the Zustand store as the user types
-- User selects one person from the suggestions list
-- Triggers the Person form to render with that person's data pre-filled for editing
+- **Reusable** — same component used for Phase 2 search bar
+- Filters `usePersons()` in real time as the user types (prefix/fuzzy match on `name`)
+- Renders a suggestion list; selecting an entry calls `onSelect(person)` callback
+- Stateless — all data comes from the store via selector; caller owns the selection callback
 
-### Person Form Fields
+#### PersonForm Component
+
+**Props:**
+
+```ts
+interface PersonFormProps {
+  person?: Person;          // undefined → Add mode; defined → Edit mode
+  onSave: () => void;       // called after successful store commit
+}
+```
+
+**Fields:**
 
 | Field | Required | Notes |
 |---|---|---|
-| Name | Yes | |
-| Date of Birth | Yes | |
-| Image URL | No | Defaults to placeholder avatar if empty |
-| Parent(s) | No | Dropdown of existing persons |
-| Spouse | No | Dropdown of existing persons (one spouse only in Phase 1) |
-| Child/Children | No | Dropdown of existing persons |
+| Name | Yes | Text input |
+| Date of Birth | Yes | Date input (ISO format internally) |
+| Image URL | No | Text input; blank → placeholder avatar |
+| Parent(s) | No | Multi-value dropdown; max 2 in Phase 1 |
+| Spouse | No | Single-value dropdown |
+| Child/Children | No | Multi-value dropdown |
+
+Each relationship dropdown:
+- Lists all persons from the store (excluding current person)
+- Includes an **"+ Add New Person"** option at the bottom
 
 > **Deferred to future versions:** Multi-select for children, "Add Child" repeater pattern, and the ✕ icon UX for relationship removal within the form.
 
-### Relationship Dropdowns — "Add New Person" Option
+#### AddPersonModal Component
 
-- Each relationship dropdown includes an **"+ Add New Person"** option at the bottom of the list
-- Selecting it opens a **modal** containing: Name (required), DOB (required), Save button, Cancel button
-- **On modal Save:**
-  - New person is created immediately with a generated UUID
-  - Added to the Zustand store and persisted to localStorage right away (not waiting for outer form save)
-  - The new person is **auto-selected** as the value in the dropdown that triggered the modal
-- **On modal Cancel:**
-  - The dropdown reverts to its previous value
-  - No person is created
+Triggered when "Add New Person" is selected from any relationship dropdown.
 
-### Save Logic (Main Form)
+- Fields: Name (required), DOB (required), Save, Cancel
+- **On Save:** calls `addPerson()` + `persist()` immediately; new person auto-selected in originating dropdown
+- **On Cancel:** dropdown reverts to previous value; no person created
 
-- **New person:** generates a UUID, appends to `persons` array in Zustand store
-- **Existing person:** updates matching entry fields in place
-- Updates `relationships` array in Zustand store based on the form's relationship fields
-- Applies auto-inference rules (spouse from shared parenting, sibling from shared parent)
-- Persists the full updated state to `localStorage`
+#### Save Logic (Main Form)
 
-### Relationship Removal
+1. Validate (see Validation section below) — abort on any error
+2. `addPerson()` or `updatePerson()` for the core person fields
+3. `setRelationships()` with the full relationship state from the form — the action handles diffing and auto-inference:
+   - If A and B are both parents of C → infer `spouse` between A and B
+   - If A and B share a parent → infer `sibling` between A and B
+4. `persist()` to write to localStorage
 
-- Individual relationships can be removed independently via the Edit form
-- Removal is **non-cascading** — only the targeted relationship entry (matched by its `id`) is deleted
-- No other relationships are affected as a side effect
-- The user is responsible for manually removing any other relationships they wish to clean up
+#### Relationship Removal
 
-### Validation (all are hard blocks — enforced on Save, with clear error messages)
+- Remove a person from a relationship dropdown → that relationship is dropped on Save
+- Removal is **non-cascading** — only the targeted relationship entry (by `id`) is deleted
+- The user is responsible for removing any other relationships they wish to clean up
+
+#### Validation (hard blocks — enforced on Save, inline error messages)
 
 | Rule | Behaviour |
 |---|---|
 | Self-relationship | Blocked — a person cannot be related to themselves |
-| Circular relationship (e.g., A is parent of B and B is parent of A) | Blocked |
-| DOB plausibility (child's DOB is on or before a parent's DOB) | Blocked |
+| Circular parent relationship (A is parent of B and B is parent of A) | Blocked |
+| DOB plausibility — child's DOB is on or before a parent's DOB | Blocked |
 
 ---
 
@@ -229,4 +344,4 @@ These items have been explicitly deferred and should be revisited in future phas
 
 ---
 
-*Last updated: 2026-04-05*
+*Last updated: 2026-04-09*

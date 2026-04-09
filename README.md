@@ -60,6 +60,6 @@ npm run dev
 
 | Phase | Feature | Status |
 |---|---|---|
-| 1A | View Mode — Tree Visualization | 🔲 Planned |
+| 1A | View Mode — Tree Visualization | ✅ Done |
 | 1B | Add / Edit Mode | 🔲 Planned |
 | 2 | Search & Autocomplete | 🔲 Planned |
