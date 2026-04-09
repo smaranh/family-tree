@@ -1,11 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
-  base: '/family-tree/',
+  base: '/family-tree',
   plugins: [react()],
-  test: {
-    environment: 'node',
-  },
 })

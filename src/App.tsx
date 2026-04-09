@@ -9,12 +9,14 @@ function EditModePlaceholder() {
   );
 }
 
+const BASE_URL = '/family-tree';
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ViewMode />} />
-        <Route path="/edit" element={<EditModePlaceholder />} />
+        <Route path={`${BASE_URL}`} element={<ViewMode />} />
+        <Route path={`${BASE_URL}/edit`} element={<EditModePlaceholder />} />
       </Routes>
     </BrowserRouter>
   );
