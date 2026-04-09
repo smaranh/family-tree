@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import ViewMode from './pages/ViewMode';
+import { ViewMode } from './pages/ViewMode'
 
 function EditModePlaceholder() {
   return (
